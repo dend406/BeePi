@@ -1,0 +1,76 @@
+import RPi.GPIO as GPIO
+import dht11
+import time
+import datetime
+import BlynkLib
+
+
+from hx711 import HX711  # import the class HX711
+
+# initialize GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+#define BLYNK_TEMPLATE_ID "TMPL4mMy1m8uc"
+#define BLYNK_TEMPLATE_NAME "Rasp"
+#define BLYNK_AUTH_TOKEN "lHbvlZnxALJUzrrp_JMCyolPPnf6Wv03"
+# Initialize Blynk
+blynk = BlynkLib.Blynk('lHbvlZnxALJUzrrp_JMCyolPPnf6Wv03')
+
+# GPIO set
+sound = 16
+instance = dht11.DHT11(pin=12)
+GPIO.setup(sound, GPIO.IN)
+hx = HX711(dout_pin=25, pd_sck_pin=24)  # create an object
+
+
+def callback(sound):
+        if GPIO.input(sound):
+                print("Sound Detected!")
+        else:
+                print("Sound Detected!")
+GPIO.add_event_detect(sound, GPIO.BOTH, bouncetime=300)  # let us know when the pin goes HIGH or LOW
+GPIO.add_event_callback(sound, callback)  # assign function to GPIO PIN, Run function on change
+
+# Register Virtual Pins
+@blynk.VIRTUAL_READ(0)
+def my_weight():
+    blynk.virtual_write(0, int((hx.get_raw_data_mean()-274510)/210))
+
+
+@blynk.VIRTUAL_READ(1)
+def my_temperature():
+    while True:
+        result = instance.read()
+        if result.is_valid():
+            blynk.virtual_write(1, result.temperature)
+        return()
+
+@blynk.VIRTUAL_READ(2)
+def my_humadity():
+    while True:
+        result = instance.read()
+        if result.is_valid():
+            blynk.virtual_write(2, result.humidity)
+        return()
+    
+try:
+	while True:
+	    result = instance.read()
+	    weight = (hx.get_raw_data_mean()-274510)/210
+	    blynk.run()
+	    my_weight()
+	    my_temperature()
+	    my_humadity()
+	    
+	    if result.is_valid():           
+	        print("Last valid input: " + str(datetime.datetime.now()))
+	        print("Temperature: %-3.1f C" % result.temperature)
+	        print("Humidity: %-3.1f %%" % result.humidity)
+	        print("Weight: %-3.1f g" % weight)	        
+
+	    time.sleep(3)
+
+except KeyboardInterrupt:
+    print("Cleanup")
+    GPIO.cleanup()
