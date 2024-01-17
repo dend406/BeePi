@@ -1,0 +1,40 @@
+import RPi.GPIO as GPIO
+import dht11
+import time
+import datetime
+from hx711 import HX711  # import the class HX711
+
+# initialize GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+
+# GPIO set
+sound = 16
+instance = dht11.DHT11(pin=12)
+GPIO.setup(sound, GPIO.IN)
+hx = HX711(dout_pin=25, pd_sck_pin=24)  # create an object
+
+def callback(sound):
+        if GPIO.input(sound):
+                print("Sound Detected!")
+        else:
+                print("Sound Detected!")
+GPIO.add_event_detect(sound, GPIO.BOTH, bouncetime=300)  # let us know when the pin goes HIGH or LOW
+GPIO.add_event_callback(sound, callback)  # assign function to GPIO PIN, Run function on change
+    
+try:
+	while True:
+	    result = instance.read()
+	    weight = (hx.get_raw_data_mean()-274510)/210
+	    
+	    if result.is_valid():
+	        print("Last valid input: " + str(datetime.datetime.now()))
+	        print("Temperature: %-3.1f C" % result.temperature)
+	        print("Humidity: %-3.1f %%" % result.humidity)
+	        print("Weight: %-3.1f g" % weight)	                      
+
+	    time.sleep(3)
+
+except KeyboardInterrupt:
+    print("Cleanup")
+    GPIO.cleanup()
